@@ -21,7 +21,7 @@
     "start": "node ./backend/dist/backend/src/index.js"
 
   },
-  "main": "server.js",
+  "main": "./backend/dist/backend/src/index.js",
   "keywords": [],
   "author": "",
   "devDependencies": {
