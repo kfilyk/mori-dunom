@@ -1,7 +1,7 @@
 {
-  "name": "seng-350-game",
+  "name": "mori-dunom",
   "version": "1.0.0",
-  "description": "Online Multiplayer Economic Strategy Game",
+  "description": "Multiplayer Economic Warlike Strategy Game",
   "private": "true",
   "license": "UNLICENSED",
   "contributors": [
@@ -18,7 +18,8 @@
     "websocket": "^1.0.32"
   },
   "scripts": {
-    "start": "node server.js"
+    "start": "node ./backend/dist/backend/src/index.js"
+
   },
   "main": "server.js",
   "keywords": [],
