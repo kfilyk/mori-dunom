@@ -1,0 +1,22 @@
+{
+  "name": "frontend",
+  "version": "1.0.0",
+  "description": "Game frontend/client",
+  "private": "true",
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "node build.js",
+    "dev": "ls src/**/* ../shared/**/* | entr node build.js"
+  },
+  "devDependencies": {
+    "@types/node": "^14.11.2",
+    "esbuild": "^0.8.5",
+    "fs-extra": "^9.0.1",
+    "glob": "^7.1.6",
+    "typescript": "^4.0.3"
+  },
+  "dependencies": {
+    "phaser": "^3.24.1",
+    "reconnecting-websocket": "^4.4.0"
+  }
+}

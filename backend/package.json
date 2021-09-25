@@ -1,0 +1,20 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "Game Engine/Backend",
+  "main": "dist/backend/src/index.js",
+  "private": "true",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "node dist/backend/src/index.js",
+    "build": "tsc",
+    "dev": "tsc -w"
+  },
+  "devDependencies": {
+    "@types/node": "^14.15",
+    "typescript": "^4.0.3"
+  },
+  "dependencies": {
+    "websocket": "^1.0.32"
+  }
+}
