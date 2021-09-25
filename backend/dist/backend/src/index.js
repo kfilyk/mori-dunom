@@ -1,0 +1,105 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const rpc_1 = require("../../shared/rpc");
+const arena_1 = __importDefault(require("../../shared/arena"));
+const player_1 = __importDefault(require("../../shared/player"));
+const uuid_1 = require("uuid");
+const PORT = 4334;
+const PLAYERS_PER_ARENA = 6;
+function main() {
+    const server = new rpc_1.Server(PORT);
+    const games = {};
+    const clients = {};
+    server.registerHandler(rpc_1.MessageType.Ping, () => {
+        return "pong";
+    });
+    server.registerHandler(rpc_1.MessageType.RegisterClient, ({ name }) => {
+        const clientUUID = uuid_1.v4();
+        clients[clientUUID] = {
+            name,
+        };
+        return { error: null, clientUUID };
+    });
+    server.registerHandler(rpc_1.MessageType.CloseClient, ({ UUID }) => {
+        const client = clients[UUID];
+        if (client === undefined) {
+            return { error: "Client isn't registered", gameUUID: null };
+        }
+        console.log(`Removing client "${client.name}" from game ${client.gameID}`);
+        const und = client.gameID != null ?
+            console.log(games[client.gameID].arena.players) : null;
+        if (client.gameID != undefined) {
+            // @ts-ignore
+            games[client.gameID].arena.removePlayer(UUID);
+            console.log(`Called arena.removePlayer(UUID) successfully.`);
+            server.sendEvent(rpc_1.EventType.GameUpdated, {
+                state: JSON.stringify(games[client.gameID].arena.serialize()),
+            });
+            delete (clients[UUID]);
+        }
+        return { error: null };
+    });
+    server.registerHandler(rpc_1.MessageType.FindLobby, ({ clientUUID }) => {
+        const client = clients[clientUUID];
+        if (client === undefined) {
+            return { error: "Client isn't registered", gameUUID: null };
+        }
+        const name = client.name;
+        const newPlayer = new player_1.default(name, clientUUID);
+        for (const [gameUUID, game] of Object.entries(games)) {
+            if (game.num_players < PLAYERS_PER_ARENA) {
+                game.num_players += 1;
+                games[gameUUID].arena.addPlayer(newPlayer);
+                client.gameID = gameUUID;
+                console.log(`Adding client "${name}" to game ${gameUUID}`);
+                return { gameUUID, error: null };
+            }
+        }
+        const newGameUUID = uuid_1.v4();
+        games[newGameUUID] = {
+            num_players: 1,
+            arena: new arena_1.default(),
+        };
+        games[newGameUUID].arena.addPlayer(newPlayer);
+        client.gameID = newGameUUID;
+        console.log(`Adding client "${name}" to game ${newGameUUID}`);
+        return { gameUUID: newGameUUID, error: null };
+    });
+    server.registerHandler(rpc_1.MessageType.ClientUpdate, ({ inputState, clientUUID }) => {
+        const client = clients[clientUUID];
+        if (client === undefined || client.gameID === undefined) {
+            return;
+        }
+        games[client.gameID].arena.update(JSON.parse(inputState));
+        server.sendEvent(rpc_1.EventType.GameUpdated, {
+            state: JSON.stringify(games[client.gameID].arena.serialize()),
+        });
+    });
+    server.registerHandler(rpc_1.MessageType.ProjectileSpawn, ({ x, y, angle, id, clientUUID }) => {
+        const client = clients[clientUUID];
+        if (client === undefined || client.gameID === undefined) {
+            return;
+        }
+        games[client.gameID].arena.addProjectile([x, y], angle, id, clientUUID);
+        server.sendEvent(rpc_1.EventType.GameUpdated, {
+            state: JSON.stringify(games[client.gameID].arena.serialize()),
+        });
+    });
+    server.registerHandler(rpc_1.MessageType.ProjectileHit, ({ clientUUID, projectileID }) => {
+        const client = clients[clientUUID];
+        if (client === undefined || client.gameID === undefined) {
+            return;
+        }
+        games[client.gameID].arena.deleteProjectile(projectileID);
+        games[client.gameID].arena.projectileHitPlayer(clientUUID);
+        server.sendEvent(rpc_1.EventType.GameUpdated, {
+            state: JSON.stringify(games[client.gameID].arena.serialize()),
+        });
+    });
+    console.log(`Server listening on port ${PORT}`);
+}
+main();
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiaW5kZXguanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi8uLi8uLi9zcmMvaW5kZXgudHMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7Ozs7QUFBQSwwQ0FBa0U7QUFDbEUsK0RBQXVDO0FBQ3ZDLGlFQUF5QztBQUV6QywrQkFBb0M7QUFFcEMsTUFBTSxJQUFJLEdBQUcsSUFBSSxDQUFDO0FBQ2xCLE1BQU0saUJBQWlCLEdBQUcsQ0FBQyxDQUFDO0FBTzVCLFNBQVMsSUFBSTtJQUNYLE1BQU0sTUFBTSxHQUFHLElBQUksWUFBTSxDQUFDLElBQUksQ0FBQyxDQUFDO0lBQ2hDLE1BQU0sS0FBSyxHQUE0QixFQUFFLENBQUM7SUFDMUMsTUFBTSxPQUFPLEdBS1QsRUFBRSxDQUFDO0lBRVAsTUFBTSxDQUFDLGVBQWUsQ0FBQyxpQkFBVyxDQUFDLElBQUksRUFBRSxHQUFHLEVBQUU7UUFDNUMsT0FBTyxNQUFNLENBQUM7SUFDaEIsQ0FBQyxDQUFDLENBQUM7SUFFSCxNQUFNLENBQUMsZUFBZSxDQUFDLGlCQUFXLENBQUMsY0FBYyxFQUFFLENBQUMsRUFBRSxJQUFJLEVBQUUsRUFBRSxFQUFFO1FBQzlELE1BQU0sVUFBVSxHQUFHLFNBQU0sRUFBRSxDQUFDO1FBRTVCLE9BQU8sQ0FBQyxVQUFVLENBQUMsR0FBRztZQUNwQixJQUFJO1NBQ0wsQ0FBQztRQUNGLE9BQU8sRUFBRSxLQUFLLEVBQUUsSUFBSSxFQUFFLFVBQVUsRUFBRSxDQUFDO0lBQ3JDLENBQUMsQ0FBQyxDQUFDO0lBRUgsTUFBTSxDQUFDLGVBQWUsQ0FBQyxpQkFBVyxDQUFDLFdBQVcsRUFBRSxDQUFDLEVBQUUsSUFBSSxFQUFFLEVBQUUsRUFBRTtRQUMzRCxNQUFNLE1BQU0sR0FBRyxPQUFPLENBQUMsSUFBSSxDQUFDLENBQUM7UUFDN0IsSUFBSSxNQUFNLEtBQUssU0FBUyxFQUFFO1lBQ3hCLE9BQU8sRUFBRSxLQUFLLEVBQUUseUJBQXlCLEVBQUUsUUFBUSxFQUFFLElBQUksRUFBRSxD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
